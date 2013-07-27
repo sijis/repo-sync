@@ -19,7 +19,7 @@ def main():
     parser.add_option('-t', '--tmp', help='temp directory location', metavar='DIR', dest='tmp', default='/tmp')
     parser.add_option('-d', '--destination', help='destination directory location', metavar='DIR', dest='dest', default='/etc/puppet/environments')
     parser.add_option('-r', '--repository', help='repository url', metavar='URL', dest='repo')
-    parser.add_option('-p', '--passenger', help='Restart apache/passenger instead of puppetmaster', dest='passenger', action='store_true', default=False)
+    parser.add_option('-a', '--action', help='Action to execute after sync', dest='action', default=None)
     parser.add_option('-s', '--server', help='Specify puppetmaster server', metavar='HOST', dest='server', default=None)
     parser.add_option('--debug', help='Enable debugging mode', dest='debug', action='store_true', default=False)
     parser.add_option('-v', '--verbose', help='enable verbosity', dest='verbose', action='store_true')
@@ -57,6 +57,14 @@ def main():
         sh.rm('-rf', data['dest_path'])
         sh.mv(data['tmp_path'], data['dest_path'])
         #sh.touch('%s/.sync-stamp' % data['dest_path'])
+
+    if data['action']:
+        action = data['action'].split()
+        if data['server']:
+            sh.ssh('-t', '-o', 'StrictHostKeyChecking=no', data['server'], action)
+        else:
+            sh.sudo(action)
+        
 
     if options.debug:
         data['git_verbose'] = '-b'
