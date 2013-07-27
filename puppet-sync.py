@@ -3,10 +3,8 @@
 __author__ = 'Sijis Aviles'
 
 from optparse import OptionParser
-from subprocess import Popen, PIPE
 import tempfile
-import shutil
-
+import sh
 
 def trans_branch(branch):
     t_branch = 'production'
@@ -30,20 +28,45 @@ def main():
     #print args
     data = vars(options)
     data['dest_path'] = '%s/%s' % (data['dest'], trans_branch(data['branch']))
-    t_stdout, t_stderr = Popen('which git', stdout=PIPE, shell=True).communicate()
-    data['git_path'] = t_stdout.strip('\n')
+    data['git_path'] = sh.which('git')
     data['tmp_path'] = tempfile.mkdtemp(prefix='puppetconf-', dir=data['tmp'])
-    shutil.rmtree(data['tmp_path'])
-    if options.debug:
-        for opt in data:
-            print '%s => %s' % (opt, data[opt])
+    data['git_verbose'] = '-qb'
 
-    print "----------------------------------------------------------------- Puppet-Sync"
+    # some sanity checking
+    if data['repo'] == None:
+        exit('Error: Repository must be defined.')
+
+    print "------------------------------------------------------- Puppet-Sync"
     print " Branch: %s" % data['branch']
     print " Destination: %s" % data['dest']
     print " Repository: %s" % data['repo']
     print " Server: %s" % data['server']
-    print "-----------------------------------------------------------------------------"
+    print "-------------------------------------------------------------------"
+
+    sh.git.clone(data['repo'], data['tmp_path'])
+    sh.cd(data['tmp_path'])
+    sh.git.config('user.name', 'Git Sync Script')
+    sh.git.config('user.email', 'root@git-sync')
+    sh.git.checkout(data['git_verbose'], 'deploy', 'origin/%s' % data['branch'])
+
+    if data['server']:
+        data['executed'] = 'rsync -r --del --force %s/ %s:%s' % (data['tmp_path'], data['server'], data['dest_path'])
+        sh.rsync('-r', '--del', '--force', '%s/' % data['tmp_path'], '%s:%s' % (data['server'], data['dest_path']))
+    else:
+        data['executed'] = 'mv %s %s' % (data['tmp_path'], data['dest_path'])
+        sh.rm('-rf', data['dest_path'])
+        sh.mv(data['tmp_path'], data['dest_path'])
+        #sh.touch('%s/.sync-stamp' % data['dest_path'])
+
+    if options.debug:
+        data['git_verbose'] = '-b'
+        print '..-:[ debug ]:-..'
+        for opt in data:
+            print '%s => %s' % (opt, data[opt])
+
+    # cleanup
+    sh.cd(data['tmp'])
+    sh.rm('-rfv', data['tmp_path'])
 
 
 if __name__ == '__main__':
