@@ -6,6 +6,7 @@ from optparse import OptionParser
 import tempfile
 import sh
 
+
 def trans_branch(branch):
     t_branch = 'production'
     if branch != 'master':
@@ -14,15 +15,39 @@ def trans_branch(branch):
 
 
 def main():
-    parser = OptionParser(version='%prog 0.1', description='Sync puppet git repo to a destination')
-    parser.add_option('-b', '--branch', help='repo branch', metavar='BRANCH', dest='branch', default='master')
-    parser.add_option('-t', '--tmp', help='temp directory location', metavar='DIR', dest='tmp', default='/tmp')
-    parser.add_option('-d', '--destination', help='destination directory location', metavar='DIR', dest='dest', default='/etc/puppet/environments')
-    parser.add_option('-r', '--repository', help='repository url', metavar='URL', dest='repo')
-    parser.add_option('-a', '--action', help='Action to execute after sync', dest='action', default=None)
-    parser.add_option('-s', '--server', help='Specify puppetmaster server', metavar='HOST', dest='server', default=None)
-    parser.add_option('--debug', help='Enable debugging mode', dest='debug', action='store_true', default=False)
-    parser.add_option('-v', '--verbose', help='enable verbosity', dest='verbose', action='store_true')
+    parser = OptionParser(version='%prog 0.1',
+                          description='Sync puppet git repo to a destination')
+    parser.add_option('-b', '--branch',
+                      dest='branch', metavar='BRANCH',
+                      default='master',
+                      help='repo branch')
+    parser.add_option('-t', '--tmp',
+                      dest='tmp', metavar='DIR',
+                      default='/tmp',
+                      help='temp directory location')
+    parser.add_option('-d', '--destination',
+                      dest='dest', metavar='DIR',
+                      default='/etc/puppet/environments',
+                      help='destination directory location')
+    parser.add_option('-r', '--repository',
+                      dest='repo', metavar='URL',
+                      help='repository url')
+    parser.add_option('-a', '--action',
+                      dest='action',
+                      default=None,
+                      help='Action to execute after sync')
+    parser.add_option('-s', '--server',
+                      dest='server', metavar='HOST',
+                      default=None,
+                      help='Specify puppetmaster server')
+    parser.add_option('--debug',
+                      dest='debug',
+                      default=False, action='store_true',
+                      help='Enable debugging mode')
+    parser.add_option('-v', '--verbose',
+                      dest='verbose',
+                      action='store_true',
+                      help='enable verbosity')
     (options, args) = parser.parse_args()
 
     #print args
@@ -33,7 +58,7 @@ def main():
     data['git_verbose'] = '-qb'
 
     # some sanity checking
-    if data['repo'] == None:
+    if data['repo'] is None:
         exit('Error: Repository must be defined.')
 
     print "------------------------------------------------------- Puppet-Sync"
@@ -47,11 +72,15 @@ def main():
     sh.cd(data['tmp_path'])
     sh.git.config('user.name', 'Git Sync Script')
     sh.git.config('user.email', 'root@git-sync')
-    sh.git.checkout(data['git_verbose'], 'deploy', 'origin/%s' % data['branch'])
+    sh.git.checkout(data['git_verbose'], 'deploy',
+                    'origin/%s' % data['branch'])
 
     if data['server']:
-        data['executed'] = 'rsync -r --del --force %s/ %s:%s' % (data['tmp_path'], data['server'], data['dest_path'])
-        sh.rsync('-r', '--del', '--force', '%s/' % data['tmp_path'], '%s:%s' % (data['server'], data['dest_path']))
+        data['executed'] = \
+            'rsync -r --del --force %s/ %s:%s' % \
+            (data['tmp_path'], data['server'], data['dest_path'])
+        sh.rsync('-r', '--del', '--force', '%s/' % data['tmp_path'],
+                 '%s:%s' % (data['server'], data['dest_path']))
     else:
         data['executed'] = 'mv %s %s' % (data['tmp_path'], data['dest_path'])
         sh.rm('-rf', data['dest_path'])
@@ -61,10 +90,10 @@ def main():
     if data['action']:
         action = data['action'].split()
         if data['server']:
-            sh.ssh('-t', '-o', 'StrictHostKeyChecking=no', data['server'], action)
+            sh.ssh('-t', '-o', 'StrictHostKeyChecking=no',
+                   data['server'], action)
         else:
             sh.sudo(action)
-        
 
     if options.debug:
         data['git_verbose'] = '-b'
