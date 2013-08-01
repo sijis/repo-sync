@@ -15,8 +15,8 @@ def trans_branch(branch):
 
 
 def main():
-    parser = OptionParser(version='%prog 0.1',
-                          description='Sync puppet git repo to a destination')
+    parser = OptionParser(version='%prog 0.2',
+                          description='Sync a git repo to a remote directory')
     parser.add_option('-b', '--branch',
                       dest='branch', metavar='BRANCH',
                       default='master',
@@ -27,7 +27,7 @@ def main():
                       help='temp directory location')
     parser.add_option('-d', '--destination',
                       dest='dest', metavar='DIR',
-                      default='/etc/puppet/environments',
+                      default='/opt/git/repos',
                       help='destination directory location')
     parser.add_option('-r', '--repository',
                       dest='repo', metavar='URL',
@@ -39,7 +39,7 @@ def main():
     parser.add_option('-s', '--server',
                       dest='server', metavar='HOST',
                       default=None,
-                      help='Specify puppetmaster server')
+                      help='Specify a remote server')
     parser.add_option('--debug',
                       dest='debug',
                       default=False, action='store_true',
@@ -54,14 +54,14 @@ def main():
     data = vars(options)
     data['dest_path'] = '%s/%s' % (data['dest'], trans_branch(data['branch']))
     data['git_path'] = sh.which('git')
-    data['tmp_path'] = tempfile.mkdtemp(prefix='puppetconf-', dir=data['tmp'])
+    data['tmp_path'] = tempfile.mkdtemp(prefix='reposync-', dir=data['tmp'])
     data['git_verbose'] = '-qb'
 
     # some sanity checking
     if data['repo'] is None:
         exit('Error: Repository must be defined.')
 
-    print "------------------------------------------------------- Puppet-Sync"
+    print "--------------------------------------------------------- Repo-Sync"
     print " Branch: %s" % data['branch']
     print " Destination: %s" % data['dest']
     print " Repository: %s" % data['repo']
