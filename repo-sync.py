@@ -95,7 +95,7 @@ def main():
         else:
             sh.sudo(action)
 
-    if options.debug:
+    if data['debug']:
         data['git_verbose'] = '-b'
         print '..-:[ debug ]:-..'
         for opt in data:
